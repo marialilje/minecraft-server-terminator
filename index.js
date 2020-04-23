@@ -1,48 +1,48 @@
 const mc = require("minecraft-protocol");
+const data = require("./data");
 
-exports.handler = function () {
+const handler = () => {
   mc.ping(
     {
       host: "minecraft.matt-cole.co.uk",
     },
     (error, data) => {
-      console.log("pinged", data, error);
       if (error !== null) {
         if (error.code === "ENOTFOUND") {
-          console.log("Server is off, do nothing");
+          console.log(
+            "You have encountered a snoozy server, shhhh! Don't wake it!"
+          );
           return;
         }
         throw new Error(`Server ping failed with error code ${error.code}`);
       }
-      if (data.players.online !== 0) {
-        console.log(
-          `There are ${data.players.online} player(s) online, do nothing!`
-        );
+
+      const playerCount = data.players.online;
+
+      if (playerCount !== 0) {
+        console.log(`There are ${playerCount} player(s) online, do nothing!`);
         return;
       }
-      setTimeout(() => {
-        console.log("Continuing now");
-        mc.ping(
-          {
-            host: "minecraft.matt-cole.co.uk",
-          },
-          (error, data) => {
-            console.log("pinged again", data);
-            if (error !== null) {
-              if (error.code === "ENOTFOUND") {
-                console.log("Server is off, do nothing");
-                return;
-              }
-              throw new Error(
-                `Server ping failed with error code ${error.code}`
-              );
-            }
-          }
-        );
-      }, 1500);
+
+      const playerHistory = data.readPlayerHistory();
+
+      if (shouldTerminate(playerHistory)) {
+        terminateServer();
+      }
+
+      updatePlayerHistory(playerHistory, playerCount);
     }
   );
-  console.log("done");
 };
 
-exports.handler();
+const shouldTerminate = (playerHistory) => {};
+
+const terminateServer = () => {};
+
+const updatePlayerHistory = (playerHistory, playerCount) => {};
+
+module.exports = {
+  handler,
+};
+
+handler();
