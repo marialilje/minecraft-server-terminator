@@ -1,5 +1,6 @@
 const mc = require("minecraft-protocol");
-const data = require("./data");
+const db = require("./data");
+const cf = require("./server");
 
 const handler = () => {
   mc.ping(
@@ -19,27 +20,61 @@ const handler = () => {
 
       const playerCount = data.players.online;
 
-      if (playerCount !== 0) {
-        console.log(`There are ${playerCount} player(s) online, do nothing!`);
-        return;
-      }
+      db.readServerLog((serverLog) => {
+        const newServerLog = updateServerLog(serverLog, playerCount);
 
-      const playerHistory = data.readPlayerHistory();
+        console.log("OLD", serverLog);
+        console.log("NEW", newServerLog);
 
-      if (shouldTerminate(playerHistory)) {
-        terminateServer();
-      }
+        db.writeServerLog(newServerLog, () => {
+          console.log("successfully updated player histroy!");
+        });
 
-      updatePlayerHistory(playerHistory, playerCount);
+        if (shouldTerminate(serverLog, playerCount)) {
+          cf.deleteServer("minecraft-2020", () => {
+            console.log("sucessfully deleted the server!");
+          });
+        }
+      });
     }
   );
 };
 
-const shouldTerminate = (playerHistory) => {};
+const shouldTerminate = (serverLog, playerCount) => {
+  if (playerCount !== 0) {
+    console.log(`There are ${playerCount} player(s) online, do nothing!`);
+    return false;
+  }
 
-const terminateServer = () => {};
+  return !serverLog.playerHistory.some(
+    (playerHistoryEntry) => playerHistoryEntry.playerCount > 0
+  );
+};
 
-const updatePlayerHistory = (playerHistory, playerCount) => {};
+const updateServerLog = (serverLog, playerCount) => {
+  const newPlayerHistory = serverLog.playerHistory.filter((log) =>
+    isWithinHour(log.timestamp)
+  );
+
+  const playerHistoryEntry = {
+    playerCount: playerCount,
+    timestamp: new Date().toISOString(),
+  };
+
+  newPlayerHistory.push(playerHistoryEntry);
+
+  return {
+    server: serverLog.server,
+    playerHistory: newPlayerHistory,
+  };
+};
+
+const isWithinHour = (timestamp) => {
+  const timestampAsDate = new Date(timestamp);
+  const oneHour = 60 * 60 * 1000;
+
+  return new Date() - timestampAsDate < oneHour;
+};
 
 module.exports = {
   handler,
