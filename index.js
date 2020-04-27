@@ -4,6 +4,8 @@ const cf = require("./server");
 
 const host = process.env.HOST;
 const stackName = process.env.STACK_NAME;
+const maxInactiveMins = 60;
+const minRunningMins = 30;
 
 if (!host) throw Error("HOST environment variable is required");
 if (!stackName) throw Error("STACK_NAME environment variable is required");
@@ -32,28 +34,34 @@ const handler = () => {
         return;
       }
 
-      if (shouldTerminate(serverLog)) {
-        console.log("Shutting down server based on log:", serverLog);
+      if (shouldTerminate(newServerLog)) {
+        console.log("Shutting down server based on log:", newServerLog);
 
         cf.deleteStack(stackName, () => {
           console.log(`Successfully deleted stack ${stackName}`);
         });
       } else {
-        console.log("Not shutting down server based on log:", serverLog);
+        console.log("Not shutting down server based on log:", newServerLog);
       }
     });
   });
 };
 
 const shouldTerminate = (serverLog) => {
-  return !serverLog.playerHistory.some(
+  const serverRunningForMinRunningTime =
+    minutesSinceTimestamp(serverLog.playerHistory[0].timestamp) >
+    minRunningMins;
+
+  const serverInactive = !serverLog.playerHistory.some(
     (playerHistoryEntry) => playerHistoryEntry.playerCount > 0
   );
+
+  return serverRunningForMinRunningTime && serverInactive;
 };
 
 const updateServerLog = (serverLog, playerCount) => {
-  const newPlayerHistory = serverLog.playerHistory.filter((log) =>
-    isWithinHour(log.timestamp)
+  const newPlayerHistory = serverLog.playerHistory.filter(
+    (log) => minutesSinceTimestamp(log.timestamp) < maxInactiveMins
   );
 
   const playerHistoryEntry = {
@@ -69,15 +77,11 @@ const updateServerLog = (serverLog, playerCount) => {
   };
 };
 
-const isWithinHour = (timestamp) => {
-  const timestampAsDate = new Date(timestamp);
-  const oneHour = 60 * 60 * 1000;
-
-  return new Date() - timestampAsDate < oneHour;
+const minutesSinceTimestamp = (timestamp) => {
+  var diff = new Date() - new Date(timestamp);
+  return Math.round(diff / (1000 * 60));
 };
 
 module.exports = {
   handler,
 };
-
-handler();

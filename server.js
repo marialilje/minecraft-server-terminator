@@ -7,7 +7,7 @@ const deleteStack = (stackName, callback) => {
     StackName: stackName,
   };
 
-  cloudFormation.deleteStacks(params, (err) => {
+  cloudFormation.deleteStack(params, (err) => {
     if (err) throw err;
     callback();
   });
