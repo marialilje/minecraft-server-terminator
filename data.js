@@ -1,13 +1,11 @@
 var AWS = require("aws-sdk");
 
-AWS.config.update({ region: "eu-west-1" });
-
 var docClient = new AWS.DynamoDB.DocumentClient();
 
-const readServerLog = (callback) => {
+const readServerLog = (host, callback) => {
   var params = {
     TableName: "minecraft-player-history",
-    Key: { server: "minecraft.matt-cole.co.uk" },
+    Key: { server: host },
   };
 
   docClient.get(params, (err, data) => {

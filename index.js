@@ -2,50 +2,50 @@ const mc = require("minecraft-protocol");
 const db = require("./data");
 const cf = require("./server");
 
+const host = process.env.HOST;
+const stackName = process.env.STACK_NAME;
+
+if (!host) throw Error("HOST environment variable is required");
+if (!stackName) throw Error("STACK_NAME environment variable is required");
+
 const handler = () => {
-  mc.ping(
-    {
-      host: "minecraft.matt-cole.co.uk",
-    },
-    (error, data) => {
-      if (error !== null) {
-        if (error.code === "ENOTFOUND") {
-          console.log(
-            "You have encountered a snoozy server, shhhh! Don't wake it!"
-          );
-          return;
-        }
-        throw new Error(`Server ping failed with error code ${error.code}`);
+  mc.ping({ host }, (error, data) => {
+    if (error !== null) {
+      if (error.code === "ENOTFOUND") {
+        console.log("Server is not running, exiting");
+        return;
+      }
+      throw new Error(`Server ping failed with error code ${error.code}`);
+    }
+
+    const playerCount = data.players.online;
+
+    db.readServerLog(host, (serverLog) => {
+      const newServerLog = updateServerLog(serverLog, playerCount);
+
+      db.writeServerLog(newServerLog, () => {
+        console.log("Successfully updated server log");
+      });
+
+      if (playerCount !== 0) {
+        console.log(`There are ${playerCount} player(s), exiting`);
+        return;
       }
 
-      const playerCount = data.players.online;
+      if (shouldTerminate(serverLog)) {
+        console.log("Shutting down server based on log:", serverLog);
 
-      db.readServerLog((serverLog) => {
-        const newServerLog = updateServerLog(serverLog, playerCount);
-
-        console.log("OLD", serverLog);
-        console.log("NEW", newServerLog);
-
-        db.writeServerLog(newServerLog, () => {
-          console.log("successfully updated player histroy!");
+        cf.deleteStack(stackName, () => {
+          console.log(`Successfully deleted stack ${stackName}`);
         });
-
-        if (shouldTerminate(serverLog, playerCount)) {
-          cf.deleteServer("minecraft-2020", () => {
-            console.log("sucessfully deleted the server!");
-          });
-        }
-      });
-    }
-  );
+      } else {
+        console.log("Not shutting down server based on log:", serverLog);
+      }
+    });
+  });
 };
 
-const shouldTerminate = (serverLog, playerCount) => {
-  if (playerCount !== 0) {
-    console.log(`There are ${playerCount} player(s) online, do nothing!`);
-    return false;
-  }
-
+const shouldTerminate = (serverLog) => {
   return !serverLog.playerHistory.some(
     (playerHistoryEntry) => playerHistoryEntry.playerCount > 0
   );

@@ -2,17 +2,17 @@ var AWS = require("aws-sdk");
 
 var cloudFormation = new AWS.CloudFormation();
 
-const deleteServer = (serverName, callback) => {
+const deleteStack = (stackName, callback) => {
   var params = {
-    StackName: serverName,
+    StackName: stackName,
   };
 
-  cloudFormation.deleteStacks(params, (err, data) => {
+  cloudFormation.deleteStacks(params, (err) => {
     if (err) throw err;
     callback();
   });
 };
 
 module.exports = {
-  deleteServer,
+  deleteStack,
 };
