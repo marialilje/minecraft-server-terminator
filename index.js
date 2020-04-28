@@ -1,6 +1,7 @@
 const mc = require("minecraft-protocol");
 const db = require("./data");
 const cf = require("./server");
+const chef = require("./chef");
 
 const host = process.env.HOST;
 const stackName = process.env.STACK_NAME;
@@ -39,6 +40,10 @@ const handler = () => {
 
         cf.deleteStack(stackName, () => {
           console.log(`Successfully deleted stack ${stackName}`);
+        });
+
+        chef.cleanupChef(stackName, () => {
+          console.log(`Successfully cleaned up Chef`);
         });
       } else {
         console.log("Not shutting down server based on log:", newServerLog);
