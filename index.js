@@ -11,6 +11,10 @@ require("dotenv").config();
     throw new Error(`${variableName} environment variable is required`);
 });
 
+process.env.CHEF_CLIENT_KEY = process.env.CHEF_CLIENT_KEY.split("\\n").join(
+  "\n"
+);
+
 const mc = require("minecraft-protocol");
 const db = require("./data");
 const cf = require("./server");
