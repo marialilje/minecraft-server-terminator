@@ -1,6 +1,7 @@
 const ChefApi = require("chef-api");
 
 const chef = new ChefApi();
+
 chef.config({
   url: process.env.CHEF_SERVER_URL,
   client_name: process.env.CHEF_CLIENT_NAME,

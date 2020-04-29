@@ -1,3 +1,16 @@
+require("dotenv").config();
+
+[
+  "HOST",
+  "STACK_NAME",
+  "CHEF_SERVER_URL",
+  "CHEF_CLIENT_NAME",
+  "CHEF_CLIENT_KEY",
+].forEach((variableName) => {
+  if (!process.env[variableName])
+    throw new Error(`${variableName} environment variable is required`);
+});
+
 const mc = require("minecraft-protocol");
 const db = require("./data");
 const cf = require("./server");
@@ -7,9 +20,6 @@ const host = process.env.HOST;
 const stackName = process.env.STACK_NAME;
 const maxInactiveMins = 60;
 const minRunningMins = 30;
-
-if (!host) throw Error("HOST environment variable is required");
-if (!stackName) throw Error("STACK_NAME environment variable is required");
 
 const handler = () => {
   mc.ping({ host }, (error, data) => {
@@ -31,7 +41,7 @@ const handler = () => {
       });
 
       if (playerCount !== 0) {
-        console.log(`There are ${playerCount} player(s), exiting`);
+        console.log(`There are ${playerCount} player(s) online, exiting`);
         return;
       }
 
