@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.663.0",
+    "chef-api": "git://github.com/mattwcole/chef-api.git#remove-ursa",
     "dotenv": "^8.2.0",
     "minecraft-protocol": "^1.11.0"
   }
